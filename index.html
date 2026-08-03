@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Olhatta • Controle de Estoque</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#5C7355">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --bg:#FBF8F3;
+  --surface:#FFFFFF;
+  --surface-2:#F3F6F0;
+  --primary:#7C9473;
+  --primary-dark:#5C7355;
+  --primary-light:#E7EEE2;
+  --secondary:#A9805F;
+  --secondary-light:#F1E6D8;
+  --text:#33362F;
+  --text-muted:#6B6E63;
+  --border:#E6E0D2;
+  --danger:#B5654A;
+  --danger-light:#F4E2DB;
+  --warning:#B9862F;
+  --warning-light:#F5EAD4;
+  --success:#4F7A63;
+  --success-light:#DEEBE3;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(51,54,47,.05), 0 6px 20px -8px rgba(51,54,47,.12);
+}
+*{box-sizing:border-box;}
+html{-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Manrope',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  -webkit-tap-highlight-color:transparent;
+}
+h1,h2,h3,.display{font-family:'Fraunces',serif;}
+button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+input,select,textarea{font-family:inherit;}
+::selection{background:var(--primary-light);}
+*:focus{outline:none;}
+button:focus-visible,.nav-item:focus-visible,a:focus-visible,.tab:focus-visible{box-shadow:0 0 0 3px var(--primary-light);border-radius:8px;}
+
+/* ---------- layout ---------- */
+#app{min-height:100vh;}
+.hidden{display:none !important;}
+
+/* ---------- login ---------- */
+.login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:24px; background:
+    radial-gradient(circle at 15% 15%, var(--primary-light) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, var(--secondary-light) 0%, transparent 45%),
+    var(--bg);
+}
+.login-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:20px;
+  box-shadow:var(--shadow); padding:40px 36px; width:100%; max-width:400px;
+}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
+.brand-mark{width:42px;height:42px;flex-shrink:0;}
+.brand-name{font-family:'Fraunces',serif;font-weight:600;font-size:22px;letter-spacing:.2px;}
+.brand-sub{font-size:11.5px;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;margin-top:1px;}
+.login-title{font-size:20px;font-weight:600;margin:0 0 4px;}
+.login-desc{font-size:13.5px;color:var(--text-muted);margin:0 0 24px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--text-muted);margin-bottom:6px;}
+.field input, .field select{
+  width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;
+  font-size:14px;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s;
+}
+.field input:focus, .field select:focus{border-color:var(--primary);background:var(--surface);}
+.field input:disabled{cursor:not-allowed;}
+.pass-wrap{position:relative;}
+.pass-wrap input{padding-right:42px;}
+.pass-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:6px;display:flex;align-items:center;}
+.pass-toggle:hover{color:var(--text);}
+.pass-toggle svg{width:18px;height:18px;}
+.btn{
+  border:none;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:filter .15s, transform .1s;
+}
+.btn:active{transform:translateY(1px);}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{filter:brightness(1.06);}
+.btn-secondary{background:var(--secondary-light);color:var(--secondary);}
+.btn-secondary:hover{filter:brightness(0.97);}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text);}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary);}
+.btn-danger{background:var(--danger-light);color:var(--danger);}
+.btn-danger-solid{background:var(--danger);color:#fff;}
+.btn-block{width:100%;}
+.btn-sm{padding:7px 12px;font-size:12.5px;border-radius:8px;}
+.btn-ghost{background:transparent;color:var(--text-muted);border:none;}
+.btn-ghost:hover{color:var(--text);}
+.btn[disabled]{opacity:.5;cursor:not-allowed;}
+
+.divider-row{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--text-muted);font-size:12px;}
+.divider-row .line{flex:1;height:1px;background:var(--border);}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;border:1.5px solid var(--border);background:#fff;border-radius:10px;padding:10px;font-size:13.5px;font-weight:600;width:100%;color:var(--text);}
+.google-btn:hover{border-color:var(--text-muted);}
+.login-footer{margin-top:20px;text-align:center;font-size:12.5px;color:var(--text-muted);}
+.login-footer a{color:var(--secondary);text-decoration:none;font-weight:600;}
+.login-switch{text-align:center;font-size:13px;margin-top:16px;color:var(--text-muted);}
+.login-switch a{color:var(--primary-dark);font-weight:600;text-decoration:none;cursor:pointer;}
+.err-msg{background:var(--danger-light);color:var(--danger);font-size:12.5px;padding:9px 12px;border-radius:8px;margin-bottom:14px;}
+.ok-msg{background:var(--success-light);color:var(--success);font-size:12.5px;padding:9px 12px;border-radius:8px;margin-bottom:14px;}
+.warn-banner{background:var(--warning-light);color:#7a5814;font-size:12.5px;padding:12px 14px;border-radius:10px;margin-bottom:16px;line-height:1.55;text-align:left;}
+.warn-banner code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:5px;font-size:11.5px;}
+.loading-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13.5px;background:var(--bg);}
+
+/* ---------- app shell ---------- */
+.shell{display:grid;grid-template-columns:224px 1fr;min-height:100vh;}
+.sidebar{
+  background:linear-gradient(180deg,#4E5D46,#3F4B38);color:#EFEFE6;
+  padding:22px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;
+}
+.sidebar .brand{padding:0 8px 22px;margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,.12);}
+.sidebar .brand-name{color:#F6F4EC;}
+.sidebar .brand-sub{color:#C7CDBB;}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;
+  color:#D9DECB;font-size:13.5px;font-weight:600;text-decoration:none;border:none;background:none;
+  width:100%;text-align:left;
+}
+.nav-item svg{width:18px;height:18px;flex-shrink:0;}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff;}
+.nav-item.active{background:rgba(255,255,255,.16);color:#fff;}
+.sidebar-footer{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);}
+.user-chip{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;}
+.avatar{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+.user-email{font-size:12px;color:#C7CDBB;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;}
+
+.main{padding:20px 32px 60px;max-width:1220px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
+.sync-pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:99px;}
+.sync-pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.sync-ok{background:var(--success-light);color:var(--success);}
+.sync-warn{background:var(--warning-light);color:var(--warning);}
+.sync-danger{background:var(--danger-light);color:var(--danger);}
+.search-trigger{display:flex;align-items:center;gap:8px;border:1.5px solid var(--border);background:var(--surface);padding:8px 14px;border-radius:10px;color:var(--text-muted);font-size:13px;font-weight:600;margin-left:auto;}
+.search-trigger:hover{border-color:var(--primary);color:var(--primary-dark);}
+.search-trigger svg{width:15px;height:15px;}
+.search-trigger kbd{background:var(--surface-2);padding:1px 6px;border-radius:5px;font-size:10px;font-family:inherit;color:var(--text-muted);}
+.page-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+.page-title{font-size:24px;font-weight:600;margin:0 0 3px;}
+.page-sub{color:var(--text-muted);font-size:13.5px;margin:0;}
+
+/* período (dia/mês/ano) */
+.period-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-bottom:18px;flex-wrap:wrap;position:relative;}
+.period-gran{display:flex;background:var(--primary-light);border-radius:9px;padding:3px;gap:2px;}
+.pgran{border:none;background:none;padding:6px 13px;border-radius:7px;font-size:12.5px;font-weight:700;color:var(--text-muted);}
+.pgran.active{background:#fff;color:var(--primary-dark);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.period-ctrl{display:flex;align-items:center;gap:2px;position:relative;}
+.icon-btn{border:none;background:none;color:var(--text-muted);padding:7px;border-radius:8px;display:flex;}
+.icon-btn:hover{background:var(--surface-2);color:var(--text);}
+.icon-btn svg{width:16px;height:16px;}
+.period-label{border:none;background:none;font-family:'Fraunces',serif;font-size:14.5px;font-weight:600;color:var(--text);padding:6px 10px;cursor:pointer;border-radius:8px;}
+.period-label:hover{background:var(--surface-2);}
+
+/* saudação */
+.dash-greeting{margin-bottom:16px;}
+.dash-greeting-title{font-family:'Fraunces',serif;font-size:25px;font-weight:600;color:var(--text);}
+.dash-greeting-sub{font-size:13px;color:var(--text-muted);margin-top:2px;}
+
+/* ações rápidas */
+.quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:22px;}
+.quick-btn{display:flex;align-items:center;gap:12px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;font-size:13.5px;font-weight:700;color:var(--text);box-shadow:var(--shadow);text-align:left;}
+.quick-btn:hover{border-color:var(--primary);}
+.quick-btn .qi{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.quick-btn .qi svg{width:19px;height:19px;}
+.qi-green{background:var(--primary-light);color:var(--primary-dark);}
+.qi-brown{background:var(--secondary-light);color:var(--secondary);}
+.qi-red{background:var(--danger-light);color:var(--danger);}
+
+/* mobile bottom nav */
+.mobile-nav{display:none;}
+
+/* ---------- cards / metrics ---------- */
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px;}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);}
+.metric-label{font-size:11.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.metric-value{font-family:'Fraunces',serif;font-size:28px;font-weight:600;}
+.metric-value.warn{color:var(--warning);}
+.metric-value.danger{color:var(--danger);}
+.metric-value.ok{color:var(--primary-dark);}
+.metric-note{font-size:11.5px;color:var(--text-muted);margin-top:2px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:20px;}
+.card-title{font-size:15px;font-weight:700;margin:0 0 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.chart-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:18px;}
+
+/* badges */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;}
+.badge-ok{background:var(--success-light);color:var(--success);}
+.badge-warn{background:var(--warning-light);color:var(--warning);}
+.badge-danger{background:var(--danger-light);color:var(--danger);}
+.badge-neutral{background:var(--surface-2);color:var(--text-muted);}
+.badge-surgical{background:var(--secondary-light);color:var(--secondary);}
+
+/* table */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);padding:8px 10px;border-bottom:1.5px solid var(--border);font-weight:700;white-space:nowrap;}
+th.sortable{cursor:pointer;}
+th.sortable:hover{color:var(--text);}
+.sort-arrow{margin-left:4px;font-size:10px;display:inline-block;color:var(--text-muted);opacity:.55;}
+.sort-arrow.active{opacity:1;color:var(--primary-dark);font-weight:700;}
+td{padding:11px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr.mat-row{cursor:pointer;}
+tr.mat-row:hover{background:var(--surface-2);}
+tr.lot-row td{background:var(--bg);font-size:12.5px;color:var(--text-muted);}
+.mat-code{font-size:11.5px;color:var(--text-muted);font-family:monospace;}
+.mat-name{font-weight:600;color:var(--text);}
+.mat-meta{font-size:11.5px;color:var(--text-muted);margin-top:1px;}
+.chevron{display:inline-block;transition:transform .15s;color:var(--text-muted);margin-right:6px;}
+.chevron.open{transform:rotate(90deg);}
+.row-actions{display:flex;gap:6px;justify-content:flex-end;}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.search-input{flex:1;min-width:180px;padding:9px 13px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);font-size:13.5px;outline:none;}
+.search-input:focus{border-color:var(--primary);}
+.select-filter{padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);font-size:13px;}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted);}
+.empty-state svg{width:44px;height:44px;margin-bottom:10px;opacity:.5;}
+.empty-state p{font-size:13.5px;margin:4px 0;}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(51,54,47,.4);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100;}
+.modal{background:var(--surface);border-radius:18px;padding:26px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal h3{margin:0 0 4px;font-size:18px;}
+.modal-sub{color:var(--text-muted);font-size:12.5px;margin:0 0 18px;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;margin-bottom:14px;}
+.toggle-row .lbl{font-size:13px;font-weight:600;}
+.toggle-row .desc{font-size:11.5px;color:var(--text-muted);margin-top:1px;}
+.switch{position:relative;width:40px;height:23px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:var(--border);border-radius:99px;transition:.15s;cursor:pointer;}
+.slider:before{content:"";position:absolute;width:17px;height:17px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;}
+input:checked + .slider{background:var(--primary);}
+input:checked + .slider:before{transform:translateX(17px);}
+
+.tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--border);}
+.tab{padding:9px 4px;margin-right:18px;font-size:13.5px;font-weight:600;color:var(--text-muted);border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tab.active{color:var(--primary-dark);border-color:var(--primary);}
+
+.list-item{display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--border);gap:12px;}
+.list-item:last-child{border-bottom:none;}
+
+.chart-wrap{height:230px;position:relative;}
+
+.settings-item{display:flex;align-items:center;justify-content:space-between;padding:16px 4px;border-bottom:1px solid var(--border);gap:16px;flex-wrap:wrap;}
+.settings-item:last-child{border-bottom:none;}
+.settings-item .t{font-size:13.5px;font-weight:600;}
+.settings-item .d{font-size:12px;color:var(--text-muted);margin-top:2px;max-width:420px;}
+.note-box{background:var(--secondary-light);color:var(--secondary);font-size:12px;padding:10px 13px;border-radius:10px;margin-top:6px;line-height:1.5;}
+
+.gsr-item{display:flex;align-items:center;justify-content:space-between;padding:10px 8px;border-radius:8px;cursor:pointer;gap:10px;}
+.gsr-item:hover{background:var(--surface-2);}
+.gsr-empty{padding:18px 4px;font-size:13px;color:var(--text-muted);text-align:center;}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 20px;border-radius:99px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:200;animation:toastIn .2s ease;}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,10px);}to{opacity:1;transform:translate(-50%,0);}}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .main{padding:16px 16px 90px;}
+  .mobile-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--surface);
+    border-top:1px solid var(--border);z-index:50;padding:6px 4px;justify-content:space-around;
+  }
+  .mobile-nav button{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--text-muted);font-size:9.5px;font-weight:700;padding:6px 4px;}
+  .mobile-nav button svg{width:19px;height:19px;}
+  .mobile-nav button.active{color:var(--primary-dark);}
+  .form-row{grid-template-columns:1fr;}
+  .two-col{grid-template-columns:1fr;}
+  .chart-grid{grid-template-columns:1fr;}
+  .page-header{flex-direction:column;align-items:flex-start;}
+  .search-trigger span.kbd-hint{display:none;}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =========================================================================
+   OLHATTA — CONTROLE DE ESTOQUE
+   Persistência: Firebase Authentication (e-mail/senha + Google) e
+   Firestore (um documento por conta, sincronizado em tempo real, com
+   persistência offline habilitada para reduzir risco de perda de dados).
+   ========================================================================= */
+
+/* ---------------- CONFIGURAÇÃO DO FIREBASE ---------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyDZBDp0USiOTTe-6YI7VFUJXZl55MambqM",
+  authDomain: "olhatta-estoque.firebaseapp.com",
+  projectId: "olhatta-estoque",
+  storageBucket: "olhatta-estoque.firebasestorage.app",
+  messagingSenderId: "869965754664",
+  appId: "1:869965754664:web:6bc15fa417d60e7ed2e01d"
+};
+
+const FIREBASE_READY = !String(firebaseConfig.apiKey).includes('COLE_AQUI');
+let auth = null, db = null;
+if(FIREBASE_READY){
+  firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+  try{ db.enablePersistence({synchronizeTabs:true}).catch(()=>{}); }catch(e){}
+}
+
+function translateFirebaseError(err){
+  const code = err && err.code;
+  const map = {
+    'auth/email-already-in-use':'Já existe uma conta com este e-mail.',
+    'auth/invalid-email':'E-mail inválido.',
+    'auth/weak-password':'Senha muito fraca (mínimo 6 caracteres).',
+    'auth/user-not-found':'E-mail ou senha inválidos.',
+    'auth/wrong-password':'E-mail ou senha inválidos.',
+    'auth/invalid-credential':'E-mail ou senha inválidos.',
+    'auth/missing-password':'Informe a senha.',
+    'auth/popup-closed-by-user':'Login cancelado.',
+    'auth/unauthorized-domain':'Este endereço não está autorizado no Firebase (Authentication → Settings → Authorized domains). Adicione o domínio do seu GitHub Pages lá.',
+    'auth/configuration-not-found':'O login por e-mail/senha ainda não foi ativado no Firebase (Authentication → Sign-in method).',
+    'auth/operation-not-allowed':'Esse método de login ainda não foi ativado no Firebase (Authentication → Sign-in method).',
+    'auth/network-request-failed':'Falha de conexão. Verifique a internet e tente de novo.',
+  };
+  return map[code] || (err && err.message) || 'Ocorreu um erro. Tente novamente.';
+}
+
+const ICONS = {
+  dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
+  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>',
+  swap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
+  cart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  minus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg>',
+  logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+  chevron:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+  chevronLeft:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeShow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeHide:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.16 3.19M6.6 6.6C3.9 8.36 2 12 2 12s3.6 7 10 7a9.3 9.3 0 0 0 5.4-1.6M9.5 9.5a3 3 0 0 0 4.24 4.24"/><line x1="2" y1="2" x2="22" y2="22"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  wrench:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+};
+
+const SYS_CATEGORIES = ['Consulta','Cirúrgico'];
+const MOTIVOS_SAIDA = ['Consulta','Cirurgia','Perda','Vencimento','Uso interno','Outro'];
+const NAV = [
+  {id:'dashboard', label:'Visão Geral', icon:ICONS.dashboard},
+  {id:'estoque', label:'Estoque', icon:ICONS.box},
+  {id:'movimentacoes', label:'Movimentações', icon:ICONS.swap},
+  {id:'reposicao', label:'Reposição', icon:ICONS.cart},
+  {id:'relatorios', label:'Relatórios', icon:ICONS.chart},
+  {id:'config', label:'Configurações', icon:ICONS.gear},
+];
+const PERIOD_ROUTES = ['dashboard','movimentacoes','relatorios'];
+
+let S = {
+  session:null,
+  route:'dashboard',
+  loginMode:'entrar',
+  data:null,
+  ui:{
+    expandedMat:null, estoqueSearch:'', estoqueCat:'todas',
+    estoqueSort:{field:'name', dir:'asc'},
+    movType:'saida', toast:null, modal:null,
+    period:{gran:'mes', refDate:null},
+    globalSearchQuery:'', syncStatus:'synced'
+  }
+};
+
+const uid = ()=> Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+const todayISO = ()=> new Date().toISOString().slice(0,10);
+const fmtDate = (iso)=> iso ? new Date(iso+'T00:00:00').toLocaleDateString('pt-BR') : '—';
+const fmtMoney = (n)=> (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const daysBetween = (a,b)=> Math.round((new Date(b)-new Date(a))/86400000);
+const escapeHtml = (s)=> (s||'').replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const cap = (s)=> s? s.charAt(0).toUpperCase()+s.slice(1) : s;
+S.ui.period.refDate = todayISO();
+
+function emptyData(){
+  return { materials:[], movements:[], categories:[...SYS_CATEGORIES] };
+}
+function isSurgical(m){ return m.category==='Cirúrgico'; }
+
+/* ---------------- persistence (Firestore) ---------------- */
+let unsubscribeDoc = null;
+
+function userDocRef(uid){ return db.collection('estoques').doc(uid); }
+
+function sanitizeData(data){
+  const d = data && typeof data==='object' ? data : {};
+  if(!Array.isArray(d.materials)) d.materials = [];
+  if(!Array.isArray(d.movements)) d.movements = [];
+  if(!Array.isArray(d.categories) || !d.categories.length) d.categories = [...SYS_CATEGORIES];
+  else SYS_CATEGORIES.forEach(c=>{ if(!d.categories.includes(c)) d.categories.unshift(c); });
+  d.materials.forEach(m=>{
+    if(!Array.isArray(m.lots)) m.lots = [];
+    if(typeof m.minStock!=='number') m.minStock = parseFloat(m.minStock)||0;
+    if(typeof m.cost!=='number') m.cost = parseFloat(m.cost)||0;
+    if(!m.unit) m.unit = 'un';
+    if(!m.category) m.category = d.categories[0]||'Consulta';
+    m.lots.forEach(l=>{ if(typeof l.qty!=='number') l.qty = parseFloat(l.qty)||0; });
+  });
+  return d;
+}
+
+function subscribeUserData(uid){
+  if(unsubscribeDoc) unsubscribeDoc();
+  unsubscribeDoc = userDocRef(uid).onSnapshot((snap)=>{
+    const raw = (snap.exists && snap.data().appData) ? snap.data().appData : emptyData();
+    S.data = sanitizeData(raw);
+    S.dataLoaded = true;
+    render();
+  }, (err)=>{
+    setSyncStatus('offline');
+    toast('Erro de sincronização: '+translateFirebaseError(err));
+  });
+}
+
+async function saveUserData(){
+  if(!S.session || !db) return;
+  setSyncStatus('saving');
+  try{
+    await userDocRef(S.session.uid).set({
+      appData: S.data,
+      email: S.session.email,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+    setSyncStatus('synced');
+  }catch(e){ setSyncStatus('offline'); toast('Não foi possível salvar: '+translateFirebaseError(e)); }
+}
+
+function setSyncStatus(status){
+  S.ui.syncStatus = status;
+  const el = document.getElementById('sync-badge');
+  if(!el) return;
+  const map = {synced:['ok','Sincronizado'], saving:['warn','Salvando…'], offline:['danger','Sem conexão']};
+  const [cls,label] = map[status]||map.synced;
+  el.className = 'sync-pill sync-'+cls;
+  el.innerHTML = `<span class="dot"></span>${label}`;
+}
+window.addEventListener('online', ()=> setSyncStatus('synced'));
+window.addEventListener('offline', ()=> setSyncStatus('offline'));
+
+window.addEventListener('error', (e)=>{
+  if(S.session) toast('Erro inesperado: '+(e.message||'algo deu errado').slice(0,80));
+});
+window.addEventListener('unhandledrejection', (e)=>{
+  const msg = (e.reason && e.reason.message) ? e.reason.message : String(e.reason||'algo deu errado');
+  if(S.session) toast('Erro inesperado: '+msg.slice(0,80));
+});
+
+function toast(msg){
+  S.ui.toast = msg; render();
+  setTimeout(()=>{ S.ui.toast=null; render(); }, 2400);
+}
+
+/* ---------------- período (dia/mês/ano) ---------------- */
+function periodRange(p){
+  const d = new Date(p.refDate+'T00:00:00');
+  if(p.gran==='dia') return {start:p.refDate, end:p.refDate};
+  if(p.gran==='mes'){
+    const y=d.getFullYear(), m=d.getMonth();
+    return {start:new Date(y,m,1).toISOString().slice(0,10), end:new Date(y,m+1,0).toISOString().slice(0,10)};
+  }
+  const y=d.getFullYear();
+  return {start:`${y}-01-01`, end:`${y}-12-31`};
+}
+function inPeriod(dateStr, p){ const r=periodRange(p); return dateStr>=r.start && dateStr<=r.end; }
+function periodLabel(p){
+  const d = new Date(p.refDate+'T00:00:00');
+  if(p.gran==='dia') return p.refDate===todayISO()? 'Hoje' : fmtDate(p.refDate);
+  if(p.gran==='mes') return cap(d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}));
+  return String(d.getFullYear());
+}
+function shiftPeriod(action){
+  const p = S.ui.period;
+  if(action==='hoje'){ p.refDate = todayISO(); return; }
+  const d = new Date(p.refDate+'T00:00:00');
+  const dir = action==='prev'? -1 : 1;
+  if(p.gran==='dia') d.setDate(d.getDate()+dir);
+  else if(p.gran==='mes') d.setMonth(d.getMonth()+dir);
+  else d.setFullYear(d.getFullYear()+dir);
+  p.refDate = d.toISOString().slice(0,10);
+}
+
+/* ---------------- derived stock logic ---------------- */
+function matStock(mat){ return (mat.lots||[]).reduce((s,l)=>s+l.qty,0); }
+
+function matStats(mat){
+  const stock = matStock(mat);
+  const movs = S.data.movements.filter(m=>m.materialId===mat.id);
+  const saidas = movs.filter(m=>m.type==='saida');
+  const allDates = movs.map(m=>m.date).concat((mat.lots||[]).map(l=>l.receivedAt)).filter(Boolean).sort();
+  const firstDate = allDates[0] || mat.createdAt || todayISO();
+  const daysActive = Math.max(1, daysBetween(firstDate, todayISO()));
+  const eligible = daysActive>=21 || saidas.length>=3;
+  const totalSaida = saidas.reduce((s,m)=>s+m.qty,0);
+  const avgMonthly = eligible ? (totalSaida / (daysActive/30)) : 0;
+  const idealStock = eligible ? Math.round(avgMonthly*1.25*10)/10 : (mat.minStock||0);
+  const suggested = Math.max(0, Math.round((idealStock - stock)*10)/10);
+  let status='ok';
+  if(stock<=0) status='sem-estoque';
+  else if(stock < (mat.minStock||0) || (eligible && stock < idealStock*0.6)) status='baixo';
+  const tracksExpiry = mat.tracksExpiry!==false;
+  const soon = tracksExpiry? (mat.lots||[]).filter(l=>l.expiry && daysBetween(todayISO(),l.expiry)>=0 && daysBetween(todayISO(),l.expiry)<=30) : [];
+  const expired = tracksExpiry? (mat.lots||[]).filter(l=>l.expiry && daysBetween(todayISO(),l.expiry)<0) : [];
+  return {stock, eligible, avgMonthly, idealStock, suggested, status, soon, expired, saidasCount:saidas.length, daysActive};
+}
+
+function findMaterial(id){ return S.data.materials.find(m=>m.id===id); }
+
+function consumeFEFO(mat, qty){
+  if(!Array.isArray(mat.lots)) mat.lots = [];
+  let remaining = qty;
+  const sorted = [...mat.lots].sort((a,b)=>{
+    if(!a.expiry && !b.expiry) return (a.receivedAt||'').localeCompare(b.receivedAt||'');
+    if(!a.expiry) return 1; if(!b.expiry) return -1;
+    return a.expiry.localeCompare(b.expiry);
+  });
+  const consumed = [];
+  for(const lot of sorted){
+    if(remaining<=0) break;
+    const take = Math.min(lot.qty, remaining);
+    if(take>0){ lot.qty = Math.round((lot.qty-take)*1000)/1000; remaining = Math.round((remaining-take)*1000)/1000; consumed.push({lotId:lot.id, take}); }
+  }
+  mat.lots = mat.lots.filter(l=>l.qty>0.0001);
+  return consumed;
+}
+
+/* ---------------- actions ---------------- */
+async function doRegister(email, pass, confirm, name){
+  email = email.trim().toLowerCase();
+  if(!name || !name.trim()) return toast('Informe seu nome.');
+  if(!email || !pass) return toast('Preencha e-mail e senha.');
+  if(pass.length<6) return toast('Senha muito curta (mín. 6 caracteres).');
+  if(pass!==confirm) return toast('As senhas não coincidem.');
+  try{
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({displayName:name.trim()});
+  }
+  catch(e){ toast(translateFirebaseError(e)); }
+}
+async function doLogin(email, pass){
+  email = email.trim().toLowerCase();
+  if(!email || !pass) return toast('Preencha e-mail e senha.');
+  try{ await auth.signInWithEmailAndPassword(email, pass); }
+  catch(e){ toast(translateFirebaseError(e)); }
+}
+async function doLoginGoogle(){
+  try{
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+  }catch(e){ toast(translateFirebaseError(e)); }
+}
+async function doLogout(){
+  try{ await auth.signOut(); }catch(e){}
+  if(unsubscribeDoc){ unsubscribeDoc(); unsubscribeDoc=null; }
+  S.session=null; S.data=null; S.route='dashboard'; S.loginMode='entrar';
+  render();
+}
+
+function openModal(name, payload){ S.ui.modal = {name, payload}; render(); }
+function closeModal(){ S.ui.modal=null; render(); }
+
+async function saveMaterial(form, editId){
+  try{
+    const name = form.name.value.trim();
+    if(!name) return toast('Informe o nome do material.');
+    const dupName = S.data.materials.find(m=>(m.name||'').trim().toLowerCase()===name.toLowerCase() && m.id!==editId);
+    if(dupName) return toast('Já existe um material com esse nome.');
+    const code = form.code.value.trim();
+    if(code){
+      const dup = S.data.materials.find(m=>m.code && m.code.toLowerCase()===code.toLowerCase() && m.id!==editId);
+      if(dup) return toast('Já existe um material com esse código.');
+    }
+    const category = form.category.value || (S.data.categories[0]||'Consulta');
+    const unit = form.unit.value.trim()||'un';
+    const minStock = parseFloat(form.minStock.value)||0;
+    const cost = parseFloat(form.cost.value)||0;
+    const tracksExpiry = form.tracksExpiry.checked;
+    if(editId){
+      const m = findMaterial(editId);
+      if(!m) return toast('Material não encontrado — pode ter sido removido em outra sessão.');
+      Object.assign(m,{name,code,category,unit,minStock,cost,tracksExpiry});
+      if(!Array.isArray(m.lots)) m.lots = [];
+      if(!tracksExpiry) m.lots.forEach(l=> l.expiry=null);
+    } else {
+      const initialQty = parseFloat(form.initialQty ? form.initialQty.value : 0) || 0;
+      const initialExpiry = (tracksExpiry && form.initialExpiry) ? form.initialExpiry.value : null;
+      const newMat = {id:uid(), code, name, category, unit, minStock, cost, tracksExpiry, lots:[], createdAt:todayISO()};
+      S.data.materials.push(newMat);
+      if(initialQty>0){
+        const lot = {id:uid(), qty:initialQty, expiry:initialExpiry||null, receivedAt:todayISO()};
+        newMat.lots.push(lot);
+        S.data.movements.unshift({id:uid(), materialId:newMat.id, lotId:lot.id, type:'entrada', qty:initialQty, date:todayISO(), user:S.session.email, note:'Estoque inicial'});
+      }
+    }
+    await saveUserData();
+    closeModal();
+    toast('Material salvo.');
+  }catch(err){
+    toast('Não foi possível salvar o material: '+(err.message||'erro desconhecido'));
+  }
+}
+
+async function deleteMaterial(id){
+  try{
+    S.data.materials = S.data.materials.filter(m=>m.id!==id);
+    S.data.movements = S.data.movements.filter(m=>m.materialId!==id);
+    await saveUserData();
+    closeModal();
+    toast('Material removido.');
+  }catch(err){ toast('Não foi possível remover: '+(err.message||'erro desconhecido')); }
+}
+
+async function registerEntrada(materialId, qty, expiry, note){
+  try{
+    qty = parseFloat(qty);
+    if(!materialId){ toast('Selecione um material.'); return false; }
+    if(!qty || qty<=0){ toast('Informe uma quantidade válida.'); return false; }
+    const mat = findMaterial(materialId);
+    if(!mat){ toast('Material não encontrado — recarregue a página e tente de novo.'); return false; }
+    if(!Array.isArray(mat.lots)) mat.lots = [];
+    const lot = {id:uid(), qty, expiry: (mat.tracksExpiry!==false && expiry)? expiry : null, receivedAt: todayISO()};
+    mat.lots.push(lot);
+    S.data.movements.unshift({id:uid(), materialId, lotId:lot.id, type:'entrada', qty, date:todayISO(), user:S.session.email, note:note||''});
+    await saveUserData();
+    toast('Entrada registrada.');
+    return true;
+  }catch(err){ toast('Não foi possível registrar a entrada: '+(err.message||'erro desconhecido')); return false; }
+}
+
+async function registerSaida(materialId, qty, note, motivo){
+  try{
+    qty = parseFloat(qty);
+    if(!materialId) return toast('Selecione um material.');
+    if(!qty || qty<=0) return toast('Informe uma quantidade válida.');
+    const mat = findMaterial(materialId);
+    if(!mat) return toast('Material não encontrado — recarregue a página e tente de novo.');
+    if(!Array.isArray(mat.lots)) mat.lots = [];
+    const total = matStock(mat);
+    if(qty>total){ toast('Estoque insuficiente — saída bloqueada (não é permitido estoque negativo).'); return false; }
+    const consumed = consumeFEFO(mat, qty);
+    S.data.movements.unshift({id:uid(), materialId, lotId:consumed.map(c=>c.lotId).join(','), type:'saida', qty, date:todayISO(), user:S.session.email, note:note||'', motivo:motivo||'Outro'});
+    await saveUserData();
+    toast('Saída registrada (FEFO aplicado).');
+    return true;
+  }catch(err){ toast('Não foi possível registrar a saída: '+(err.message||'erro desconhecido')); return false; }
+}
+
+async function registerAjuste(materialId, newQtyRaw, note){
+  try{
+    const newQty = parseFloat(newQtyRaw);
+    if(isNaN(newQty) || newQty<0) return toast('Informe uma quantidade válida.');
+    const mat = findMaterial(materialId);
+    if(!mat) return toast('Material não encontrado — recarregue a página e tente de novo.');
+    if(!Array.isArray(mat.lots)) mat.lots = [];
+    const current = matStock(mat);
+    const diff = Math.round((newQty-current)*1000)/1000;
+    if(diff===0){ toast('O valor informado já é o estoque atual.'); return; }
+    if(diff>0){ mat.lots.push({id:uid(), qty:diff, expiry:null, receivedAt:todayISO()}); }
+    else{ consumeFEFO(mat, Math.abs(diff)); }
+    S.data.movements.unshift({id:uid(), materialId, type:'ajuste', qty:diff, date:todayISO(), user:S.session.email, note: note||'Ajuste manual de estoque'});
+    await saveUserData();
+    toast('Estoque ajustado.');
+  }catch(err){ toast('Não foi possível ajustar o estoque: '+(err.message||'erro desconhecido')); }
+}
+
+async function resetAllData(){
+  try{
+    S.data = emptyData();
+    await saveUserData();
+    closeModal();
+    toast('Dados zerados. Você está começando do zero.');
+  }catch(err){ toast('Não foi possível zerar os dados: '+(err.message||'erro desconhecido')); }
+}
+
+async function addCategory(name){
+  try{
+    name = (name||'').trim();
+    if(!name) return;
+    if(!Array.isArray(S.data.categories)) S.data.categories = [...SYS_CATEGORIES];
+    if(!S.data.categories.includes(name)) S.data.categories.push(name);
+    await saveUserData();
+  }catch(err){ toast('Não foi possível adicionar a categoria: '+(err.message||'erro desconhecido')); }
+}
+
+/* ---------------- PWA helpers ---------------- */
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{ e.preventDefault(); deferredInstallPrompt=e; });
+
+async function handleInstallClick(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt=null;
+  } else {
+    openModal('install-help');
+  }
+}
+async function handleUpdateClick(){
+  try{
+    if('caches' in window){ const keys = await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
+    if('serviceWorker' in navigator){ const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r=>r.unregister())); }
+    toast('Cache limpo. Recarregando…');
+    setTimeout(()=>location.reload(), 700);
+  }catch(e){ toast('Cache limpo (parcial). Recarregue manualmente se preciso.'); }
+}
+
+/* ============================= RENDER ============================= */
+
+function render(){
+  const app = document.getElementById('app');
+  if(!FIREBASE_READY){ app.innerHTML = renderConfigNeeded(); return; }
+  if(!S.authResolved){ app.innerHTML = `<div class="loading-screen">Carregando…</div>`; return; }
+  if(!S.session){ app.innerHTML = renderLogin(); attachLoginEvents(); return; }
+  if(S.needsName){ app.innerHTML = renderNamePrompt(); attachNamePromptEvents(); return; }
+  if(!S.dataLoaded){ app.innerHTML = `<div class="loading-screen">Sincronizando seu estoque…</div>`; return; }
+  app.innerHTML = renderShell();
+  attachShellEvents();
+  if(S.route==='dashboard') drawCharts();
+}
+
+function renderNamePrompt(){
+  return `
+  <div class="login-screen">
+    <div class="login-card">
+      <div class="brand">${logoMark(42)}<div><div class="brand-name">Olhatta</div><div class="brand-sub">Estoque Oftalmológico</div></div></div>
+      <h2 class="login-title">Como podemos te chamar?</h2>
+      <p class="login-desc">Esse nome aparece no cumprimento da Visão Geral. Você pode mudá-lo depois em Configurações.</p>
+      <form id="name-form">
+        <div class="field"><label>Seu nome</label><input type="text" id="f-displayname" placeholder="Ex.: Camila"></div>
+        <button type="submit" class="btn btn-primary btn-block">Continuar</button>
+      </form>
+    </div>
+  </div>`;
+}
+
+function attachNamePromptEvents(){
+  const input = document.getElementById('f-displayname');
+  input.focus();
+  document.getElementById('name-form').onsubmit = (e)=>{ e.preventDefault(); saveDisplayName(input.value); };
+}
+
+async function saveDisplayName(name){
+  name = (name||'').trim();
+  if(!name) return toast('Informe um nome.');
+  try{
+    await auth.currentUser.updateProfile({displayName:name});
+    S.session.displayName = name;
+    S.needsName = false;
+    render();
+  }catch(e){ toast('Não foi possível salvar o nome. Tente novamente.'); }
+}
+
+
+function renderConfigNeeded(){
+  return `
+  <div class="login-screen">
+    <div class="login-card">
+      <div class="brand">${logoMark(42)}<div><div class="brand-name">Olhatta</div><div class="brand-sub">Estoque Oftalmológico</div></div></div>
+      <h2 class="login-title">Falta configurar o Firebase</h2>
+      <div class="warn-banner">
+        Para o login e a sincronização funcionarem, cole o <code>firebaseConfig</code> do seu projeto Firebase no início do arquivo, dentro de <code>const firebaseConfig = { ... }</code>.<br><br>
+        Onde pegar: Firebase Console → ⚙️ Configurações do projeto → aba "Geral" → seção "Seus apps" → ícone <code>&lt;/&gt;</code> (Web) → copiar o objeto de configuração.<br><br>
+        Depois de colar, salve o arquivo, suba de novo no GitHub e recarregue a página.
+      </div>
+      <div class="login-footer">Dúvidas? <a href="mailto:plamilypainelfinanceiro@gmail.com">plamilypainelfinanceiro@gmail.com</a></div>
+    </div>
+  </div>`;
+}
+
+function logoMark(size=42){
+  return `<svg class="brand-mark" width="${size}" height="${size}" viewBox="0 0 42 42" fill="none">
+    <circle cx="21" cy="21" r="20" fill="var(--primary-light)"/>
+    <path d="M8 21c3.8-7 9-9.5 13-9.5s9.2 2.5 13 9.5c-3.8 7-9 9.5-13 9.5S11.8 28 8 21Z" stroke="var(--primary-dark)" stroke-width="2" fill="none" stroke-linejoin="round"/>
+    <circle cx="21" cy="21" r="5.2" fill="var(--secondary)"/>
+    <circle cx="19.4" cy="19.4" r="1.4" fill="#fff"/>
+  </svg>`;
+}
+
+function renderLogin(){
+  const isCreate = S.loginMode==='criar';
+  return `
+  <div class="login-screen">
+    <div class="login-card">
+      <div class="brand">
+        ${logoMark(42)}
+        <div><div class="brand-name">Olhatta</div><div class="brand-sub">Estoque Oftalmológico</div></div>
+      </div>
+      <h2 class="login-title">${isCreate? 'Criar conta':'Entrar na sua conta'}</h2>
+      <p class="login-desc">${isCreate? 'Comece do zero — seu estoque fica salvo na nuvem, vinculado ao seu login.' : 'Acesse o controle de estoque da clínica.'}</p>
+      <form id="login-form">
+        ${isCreate? `<div class="field"><label>Seu nome</label><input type="text" id="f-name" placeholder="Como você quer ser chamado(a)?"></div>`:''}
+        <div class="field"><label>E-mail</label><input type="email" id="f-email" placeholder="seuemail@clinica.com" autocomplete="off"></div>
+        <div class="field"><label>Senha</label><div class="pass-wrap"><input type="password" id="f-pass" placeholder="••••••••" autocomplete="new-password"><button type="button" class="pass-toggle" data-toggle-pass="f-pass">${ICONS.eyeShow}</button></div></div>
+        ${isCreate? `<div class="field"><label>Confirmar senha</label><div class="pass-wrap"><input type="password" id="f-pass2" placeholder="••••••••" autocomplete="new-password"><button type="button" class="pass-toggle" data-toggle-pass="f-pass2">${ICONS.eyeShow}</button></div></div>`:''}
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:6px;">${isCreate?'Criar conta':'Entrar'}</button>
+      </form>
+      <div class="divider-row"><div class="line"></div><span>ou</span><div class="line"></div></div>
+      <button class="google-btn" id="google-btn">
+        <svg width="17" height="17" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.5 29.6 3.5 24 3.5 12.7 3.5 3.5 12.7 3.5 24S12.7 44.5 24 44.5 44.5 35.3 44.5 24c0-1.2-.1-2.4-.3-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.6 15.5 18.9 12.5 24 12.5c3.1 0 5.8 1.1 8 3l6-6C34.5 5.5 29.6 3.5 24 3.5c-7.7 0-14.4 4.4-17.7 11.2z"/><path fill="#4CAF50" d="M24 44.5c5.5 0 10.4-1.9 14.1-5.1l-6.5-5.5C29.6 35.4 27 36 24 36c-5.3 0-9.7-3.4-11.3-8.1l-6.6 5C9.5 40 16.2 44.5 24 44.5z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 2.9-2.8 5.3-5.2 6.9l6.5 5.5C40.5 37 44.5 31 44.5 24c0-1.2-.1-2.4-.3-3.5z"/></svg>
+        Continuar com Google
+      </button>
+      <div class="login-switch">
+        ${isCreate? 'Já tem conta? <a id="switch-mode">Entrar</a>' : 'Ainda não tem conta? <a id="switch-mode">Criar conta</a>'}
+      </div>
+      <div class="login-footer">Precisa de ajuda? <a href="mailto:plamilypainelfinanceiro@gmail.com">plamilypainelfinanceiro@gmail.com</a></div>
+    </div>
+  </div>`;
+}
+
+function attachLoginEvents(){
+  document.getElementById('switch-mode').onclick = ()=>{ S.loginMode = S.loginMode==='criar'?'entrar':'criar'; render(); };
+  document.getElementById('google-btn').onclick = doLoginGoogle;
+  document.querySelectorAll('[data-toggle-pass]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const inp = document.getElementById(btn.dataset.togglePass);
+      const showing = inp.type==='text';
+      inp.type = showing? 'password':'text';
+      btn.innerHTML = showing? ICONS.eyeShow: ICONS.eyeHide;
+    };
+  });
+  document.getElementById('login-form').onsubmit = (e)=>{
+    e.preventDefault();
+    const email=document.getElementById('f-email').value;
+    const pass=document.getElementById('f-pass').value;
+    if(S.loginMode==='criar'){
+      const pass2=document.getElementById('f-pass2').value;
+      const name=document.getElementById('f-name').value;
+      doRegister(email,pass,pass2,name);
+    } else {
+      doLogin(email,pass);
+    }
+  };
+}
+
+function renderShell(){
+  const initials = S.session.email[0].toUpperCase();
+  return `
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">${logoMark(34)}<div><div class="brand-name" style="font-size:17px;">Olhatta</div><div class="brand-sub" style="font-size:10px;">Estoque</div></div></div>
+      ${NAV.map(n=>`<button class="nav-item ${S.route===n.id?'active':''}" data-route="${n.id}">${n.icon}${n.label}</button>`).join('')}
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="avatar">${initials}</div>
+          <div style="flex:1;min-width:0;"><div class="user-email">${escapeHtml(S.session.email)}</div></div>
+        </div>
+        <button class="nav-item" id="logout-btn" style="margin-top:4px;">${ICONS.logout}Sair</button>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="topbar">
+        <span id="sync-badge" class="sync-pill sync-ok"><span class="dot"></span>Sincronizado</span>
+        <button class="search-trigger" id="global-search-btn">${ICONS.search}Pesquisar<span class="kbd-hint"><kbd>Ctrl</kbd> <kbd>K</kbd></span></button>
+      </div>
+      ${renderPage()}
+    </main>
+  </div>
+  <nav class="mobile-nav">
+    ${NAV.map(n=>`<button class="${S.route===n.id?'active':''}" data-route="${n.id}">${n.icon}<span>${n.label}</span></button>`).join('')}
+  </nav>
+  ${S.ui.modal? renderModal(): ''}
+  ${S.ui.toast? `<div class="toast">${escapeHtml(S.ui.toast)}</div>`:''}
+  `;
+}
+
+function pageMeta(){
+  return {
+    dashboard:['Visão Geral','Resumo do estoque da Olhatta'],
+    estoque:['Estoque','Materiais, lotes e validades'],
+    movimentacoes:['Movimentações','Entradas, saídas e histórico de auditoria'],
+    reposicao:['Reposição inteligente','Lista de compras calculada pelo consumo médio'],
+    relatorios:['Relatórios','Consumo, tendências e itens parados'],
+    config:['Configurações','Conta, sincronização e app'],
+  }[S.route];
+}
+
+function renderPage(){
+  const [title,sub] = pageMeta();
+  let body='';
+  if(S.route==='dashboard') body = renderDashboard();
+  else if(S.route==='estoque') body = renderEstoque();
+  else if(S.route==='movimentacoes') body = renderMovimentacoes();
+  else if(S.route==='reposicao') body = renderReposicao();
+  else if(S.route==='relatorios') body = renderRelatorios();
+  else if(S.route==='config') body = renderConfig();
+  const nav = PERIOD_ROUTES.includes(S.route) ? renderPeriodNav() : '';
+  return `<div class="page-header"><div><h1 class="page-title">${title}</h1><p class="page-sub">${sub}</p></div>${pageAction()}</div>${nav}${body}`;
+}
+
+function pageAction(){
+  if(S.route==='estoque') return `<button class="btn btn-primary" id="btn-new-material">${ICONS.plus}Novo material</button>`;
+  if(S.route==='movimentacoes') return `<button class="btn btn-primary" id="btn-new-mov">${ICONS.plus}Nova movimentação</button>`;
+  return '';
+}
+
+function renderPeriodNav(){
+  const p = S.ui.period;
+  return `
+  <div class="period-nav">
+    <div class="period-gran">
+      ${['dia','mes','ano'].map(k=>`<button class="pgran ${p.gran===k?'active':''}" data-pgran="${k}">${({dia:'Dia',mes:'Mês',ano:'Ano'})[k]}</button>`).join('')}
+    </div>
+    <div class="period-ctrl">
+      <button class="icon-btn" data-pnav="prev" title="Anterior">${ICONS.chevronLeft}</button>
+      <button class="period-label" id="period-label-btn" title="Escolher data">${periodLabel(p)}</button>
+      <input type="date" id="period-date-input" value="${p.refDate}" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;">
+      <button class="icon-btn" data-pnav="next" title="Próximo">${ICONS.chevron}</button>
+      ${p.refDate!==todayISO()? `<button class="btn btn-secondary btn-sm" data-pnav="hoje">Hoje</button>`:''}
+    </div>
+  </div>`;
+}
+
+function greetingText(){
+  const h = new Date().getHours();
+  const periodo = h<5?'Boa madrugada':h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+  let nome = '';
+  if(S.session.displayName) nome = cap(S.session.displayName.trim().split(' ')[0]);
+  else { const nomeBase = S.session.email.split('@')[0].split(/[.\-_0-9]+/)[0]; nome = nomeBase? cap(nomeBase) : ''; }
+  return `${periodo}${nome? ', '+nome : ''}`;
+}
+
+/* -------- dashboard -------- */
+function renderDashboard(){
+  const mats = S.data.materials;
+  const stats = mats.map(m=>({m, s:matStats(m)}));
+  const totalMat = mats.length;
+  const totalUnidades = stats.reduce((s,x)=>s+x.s.stock,0);
+  const baixo = stats.filter(x=>x.s.status==='baixo'||x.s.status==='sem-estoque').length;
+  const precisaRepor = stats.filter(x=>x.s.eligible && x.s.suggested>0).length;
+  const vencendo = stats.reduce((s,x)=>s+x.s.soon.length,0);
+  const vencidos = stats.reduce((s,x)=>s+x.s.expired.length,0);
+  const periodMovs = S.data.movements.filter(m=>m.type==='saida' && inPeriod(m.date, S.ui.period));
+  const valorConsumo = periodMovs.reduce((s,m)=>{ const mat=findMaterial(m.materialId); return s + (mat? (mat.cost||0)*m.qty : 0); },0);
+  const reposicao = stats.filter(x=>x.s.eligible && x.s.suggested>0).sort((a,b)=>b.s.suggested-a.s.suggested).slice(0,3);
+
+  return `
+  <div class="dash-greeting">
+    <div class="dash-greeting-title">${greetingText()}</div>
+    <div class="dash-greeting-sub">Aqui está o resumo do estoque da Olhatta.</div>
+  </div>
+  <div class="quick-actions">
+    <button class="quick-btn" id="qa-entrada"><span class="qi qi-green">${ICONS.plus}</span>Registrar entrada</button>
+    <button class="quick-btn" id="qa-novo"><span class="qi qi-brown">${ICONS.box}</span>Novo material</button>
+    <button class="quick-btn" id="qa-saida"><span class="qi qi-red">${ICONS.minus}</span>Registrar saída</button>
+  </div>
+  ${totalMat===0? emptyState('Nenhum material cadastrado ainda', 'Comece cadastrando os materiais de consulta e cirúrgicos da clínica.', 'Cadastrar primeiro material', ()=>openModal('material')) : `
+  <div class="metric-grid">
+    <div class="metric-card"><div class="metric-label">Total de materiais</div><div class="metric-value">${totalMat}</div></div>
+    <div class="metric-card"><div class="metric-label">Quantidade em estoque</div><div class="metric-value">${Math.round(totalUnidades*10)/10}</div><div class="metric-note">unidades somadas</div></div>
+    <div class="metric-card"><div class="metric-label">Baixo estoque</div><div class="metric-value ${baixo?'warn':'ok'}">${baixo}</div><div class="metric-note">abaixo do ideal</div></div>
+    <div class="metric-card"><div class="metric-label">Itens p/ repor</div><div class="metric-value ${precisaRepor?'warn':'ok'}">${precisaRepor}</div><div class="metric-note">precisam de reposição</div></div>
+    <div class="metric-card"><div class="metric-label">Vencendo (30 dias)</div><div class="metric-value ${vencendo?'warn':'ok'}">${vencendo}</div><div class="metric-note">lotes próximos ao vencimento</div></div>
+    <div class="metric-card"><div class="metric-label">Vencidos</div><div class="metric-value ${vencidos?'danger':'ok'}">${vencidos}</div><div class="metric-note">lotes fora de validade</div></div>
+    <div class="metric-card"><div class="metric-label">Consumo no período</div><div class="metric-value ok">${fmtMoney(valorConsumo)}</div><div class="metric-note">valorização das saídas</div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="card">
+      <div class="card-title">Consumo por categoria — ${periodLabel(S.ui.period).toLowerCase()}</div>
+      <div class="chart-wrap"><canvas id="dash-chart-cat"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tendência — 6 meses</div>
+      <div class="chart-wrap"><canvas id="dash-chart-trend"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Consulta x Cirúrgico</div>
+      <div class="chart-wrap"><canvas id="dash-chart-split"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Atenção imediata</div>
+    ${renderAttentionList(stats)}
+  </div>
+  ${reposicao.length? `
+  <div class="card">
+    <div class="card-title">Sugestões de reposição<button class="btn btn-outline btn-sm" data-route="reposicao">Ver tudo</button></div>
+    ${reposicao.map(({m,s})=>`<div class="list-item"><span class="mat-name">${escapeHtml(m.name)}</span><span class="badge badge-warn">Comprar ${s.suggested} ${m.unit}</span></div>`).join('')}
+  </div>`:''}
+  `}
+  `;
+}
+
+function renderAttentionList(stats){
+  const items = [];
+  stats.forEach(({m,s})=>{
+    if(s.status==='sem-estoque') items.push({m,label:'Sem estoque', type:'danger'});
+    else if(s.status==='baixo') items.push({m,label:'Baixo estoque', type:'warn'});
+    s.expired.forEach(l=> items.push({m,label:`Lote vencido (${fmtDate(l.expiry)})`, type:'danger'}));
+    s.soon.forEach(l=> items.push({m,label:`Vence em ${daysBetween(todayISO(),l.expiry)}d`, type:'warn'}));
+  });
+  if(!items.length) return `<p style="color:var(--text-muted);font-size:13.5px;margin:0;">Tudo em dia — nenhum alerta no momento.</p>`;
+  return items.slice(0,10).map(it=>`
+    <div class="list-item">
+      <div><span class="mat-name">${escapeHtml(it.m.name)}</span>${isSurgical(it.m)?` <span class="badge badge-surgical">Cirúrgico</span>`:''}</div>
+      <span class="badge badge-${it.type==='danger'?'danger':'warn'}">${it.label}</span>
+    </div>`).join('');
+}
+
+function drawCharts(){
+  if(typeof Chart==='undefined') return;
+  const catCanvas = document.getElementById('dash-chart-cat');
+  if(catCanvas){
+    const cats = S.data.categories;
+    const periodMovs = S.data.movements.filter(m=>m.type==='saida' && inPeriod(m.date, S.ui.period));
+    const byCat = cats.map(c=>{
+      const ids = S.data.materials.filter(m=>m.category===c).map(m=>m.id);
+      return periodMovs.filter(m=>ids.includes(m.materialId)).reduce((s,m)=>s+m.qty,0);
+    });
+    if(window._chartCat) window._chartCat.destroy();
+    window._chartCat = new Chart(catCanvas.getContext('2d'), {
+      type:'bar',
+      data:{ labels:cats, datasets:[{ label:'Unidades consumidas', data:byCat, backgroundColor:'#7C9473', borderRadius:6, maxBarThickness:46 }]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{ y:{beginAtZero:true, grid:{color:'#EFE9DE'}}, x:{grid:{display:false}} } }
+    });
+  }
+  const trendCanvas = document.getElementById('dash-chart-trend');
+  if(trendCanvas){
+    const months = [];
+    const now = new Date();
+    for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(), now.getMonth()-i, 1); months.push(d); }
+    const labels = months.map(d=> cap(d.toLocaleDateString('pt-BR',{month:'short'})));
+    const values = months.map(d=>{
+      const y=d.getFullYear(), m=d.getMonth();
+      const start = new Date(y,m,1).toISOString().slice(0,10);
+      const end = new Date(y,m+1,0).toISOString().slice(0,10);
+      return S.data.movements.filter(mv=>mv.type==='saida' && mv.date>=start && mv.date<=end).reduce((s,mv)=>s+mv.qty,0);
+    });
+    if(window._chartTrend) window._chartTrend.destroy();
+    window._chartTrend = new Chart(trendCanvas.getContext('2d'), {
+      type:'line',
+      data:{ labels, datasets:[{ label:'Unidades consumidas', data:values, borderColor:'#A9805F', backgroundColor:'rgba(169,128,95,.12)', fill:true, tension:.35, pointRadius:3 }]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{ y:{beginAtZero:true, grid:{color:'#EFE9DE'}}, x:{grid:{display:false}} } }
+    });
+  }
+  const splitCanvas = document.getElementById('dash-chart-split');
+  if(splitCanvas){
+    const consultaQty = S.data.materials.filter(m=>!isSurgical(m)).reduce((s,m)=>s+matStock(m),0);
+    const cirurgicoQty = S.data.materials.filter(isSurgical).reduce((s,m)=>s+matStock(m),0);
+    if(window._chartSplit) window._chartSplit.destroy();
+    window._chartSplit = new Chart(splitCanvas.getContext('2d'), {
+      type:'doughnut',
+      data:{ labels:['Consulta','Cirúrgico'], datasets:[{ data:[consultaQty,cirurgicoQty], backgroundColor:['#7C9473','#A9805F'], borderWidth:0 }]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{boxWidth:11,font:{size:11.5}}}} }
+    });
+  }
+}
+
+/* -------- estoque -------- */
+function nearestExpiry(m){
+  if(m.tracksExpiry===false) return '9999-99-99';
+  const exp = (m.lots||[]).map(l=>l.expiry).filter(Boolean).sort();
+  return exp[0] || '9999-99-99';
+}
+const STATUS_RANK = {'sem-estoque':0, 'baixo':1, 'ok':2};
+
+function sortMats(mats){
+  const {field,dir} = S.ui.estoqueSort; const mul = dir==='asc'?1:-1;
+  return mats.slice().sort((a,b)=>{
+    let av,bv;
+    if(field==='code'){ av=(a.code||'').toLowerCase(); bv=(b.code||'').toLowerCase(); }
+    else if(field==='category'){ av=a.category.toLowerCase(); bv=b.category.toLowerCase(); }
+    else if(field==='date'){ av=a.createdAt||''; bv=b.createdAt||''; }
+    else if(field==='stock'){ av=matStock(a); bv=matStock(b); }
+    else if(field==='ideal'){ av=matStats(a).idealStock; bv=matStats(b).idealStock; }
+    else if(field==='status'){ av=STATUS_RANK[matStats(a).status]; bv=STATUS_RANK[matStats(b).status]; }
+    else if(field==='validade'){ av=nearestExpiry(a); bv=nearestExpiry(b); }
+    else { av=a.name.toLowerCase(); bv=b.name.toLowerCase(); }
+    if(av<bv) return -1*mul; if(av>bv) return 1*mul; return 0;
+  });
+}
+function sortArrow(field){
+  const active = S.ui.estoqueSort.field===field;
+  return active
+    ? `<span class="sort-arrow active">${S.ui.estoqueSort.dir==='asc'?'▲':'▼'}</span>`
+    : `<span class="sort-arrow">⇅</span>`;
+}
+
+function renderEstoque(){
+  const q = S.ui.estoqueSearch.toLowerCase();
+  const cat = S.ui.estoqueCat;
+  if(!S.data.materials.length) return emptyState('Nenhum material cadastrado', 'Cadastre materiais de consulta e cirúrgicos para começar a controlar o estoque.', 'Cadastrar material', ()=>openModal('material'));
+  let mats = S.data.materials.filter(m=> (m.name.toLowerCase().includes(q) || (m.code||'').toLowerCase().includes(q)) && (cat==='todas'||m.category===cat));
+  mats = sortMats(mats);
+
+  const rows = mats.map(m=>{
+    const s = matStats(m);
+    const open = S.ui.expandedMat===m.id;
+    const tracksExpiry = m.tracksExpiry!==false;
+    const statusBadge = s.status==='sem-estoque'? `<span class="badge badge-danger">Sem estoque</span>`
+      : s.status==='baixo'? `<span class="badge badge-warn">Baixo estoque</span>`
+      : `<span class="badge badge-ok">OK</span>`;
+    const valBadge = !tracksExpiry? `<span class="badge badge-neutral">Sem validade</span>`
+      : s.expired.length? `<span class="badge badge-danger">${s.expired.length} vencido(s)</span>`
+      : s.soon.length? `<span class="badge badge-warn">${s.soon.length} a vencer</span>`
+      : `<span class="badge badge-neutral">Validade OK</span>`;
+    let lotsHtml = '';
+    if(open){
+      const c30 = S.data.movements.filter(mm=>mm.materialId===m.id && mm.type==='saida' && daysBetween(mm.date,todayISO())<=30).reduce((s,mm)=>s+mm.qty,0);
+      lotsHtml += `<tr class="lot-row"><td colspan="9">
+        <strong style="color:var(--text);">Análise de consumo:</strong>
+        Consumo 30 dias: <strong>${c30} ${m.unit}</strong> &nbsp;•&nbsp;
+        Consumo médio mensal: <strong>${s.eligible? (Math.round(s.avgMonthly*10)/10)+' '+m.unit : 'calculando…'}</strong> &nbsp;•&nbsp;
+        Estoque ideal: <strong>${s.eligible? s.idealStock+' '+m.unit : (m.minStock||0)+' '+m.unit+' (mínimo)'}</strong>
+      </td></tr>`;
+      if(!m.lots.length){ lotsHtml += `<tr class="lot-row"><td colspan="9">Nenhum lote em estoque para este material.</td></tr>`; }
+      else lotsHtml += m.lots.slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999')).map(l=>{
+        const d = l.expiry? daysBetween(todayISO(),l.expiry): null;
+        let vb = `<span class="badge badge-neutral">Sem validade</span>`;
+        if(d!==null){ vb = d<0? `<span class="badge badge-danger">Vencido há ${Math.abs(d)}d</span>` : d<=30? `<span class="badge badge-warn">Vence em ${d}d</span>` : `<span class="badge badge-ok">Válido</span>`; }
+        return `<tr class="lot-row"><td colspan="4">Lote • recebido em ${fmtDate(l.receivedAt)}</td><td>${l.qty} ${m.unit}</td><td>${fmtDate(l.expiry)}</td><td colspan="2">${vb}</td></tr>`;
+      }).join('');
+    }
+    return `
+      <tr class="mat-row" data-toggle="${m.id}">
+        <td><span class="mat-code">${escapeHtml(m.code||'—')}</span></td>
+        <td><span class="chevron ${open?'open':''}">${ICONS.chevron}</span><span class="mat-name">${escapeHtml(m.name)}</span>${isSurgical(m)?` <span class="badge badge-surgical">Cirúrgico</span>`:''}</td>
+        <td>${escapeHtml(m.category)}</td>
+        <td>${fmtDate(m.createdAt)}</td>
+        <td>${s.stock} ${m.unit}</td>
+        <td>${s.eligible? s.idealStock+' '+m.unit : '<span style="color:var(--text-muted);">calculando…</span>'}</td>
+        <td>${statusBadge}</td>
+        <td>${valBadge}</td>
+        <td><div class="row-actions"><button class="btn btn-ghost btn-sm" data-adjust="${m.id}" title="Ajustar estoque manualmente">${ICONS.wrench}</button><button class="btn btn-outline btn-sm" data-edit="${m.id}">Editar</button></div></td>
+      </tr>
+      ${lotsHtml}
+    `;
+  }).join('');
+
+  return `
+    <div class="toolbar">
+      <input class="search-input" id="estoque-search" placeholder="Buscar por código ou nome…" value="${escapeHtml(S.ui.estoqueSearch)}">
+      <select class="select-filter" id="estoque-cat">
+        <option value="todas" ${cat==='todas'?'selected':''}>Todas categorias</option>
+        ${S.data.categories.map(c=>`<option value="${escapeHtml(c)}" ${cat===c?'selected':''}>${escapeHtml(c)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th class="sortable" data-sort="code">Código${sortArrow('code')}</th>
+            <th class="sortable" data-sort="name">Material${sortArrow('name')}</th>
+            <th class="sortable" data-sort="category">Categoria${sortArrow('category')}</th>
+            <th class="sortable" data-sort="date">Cadastro${sortArrow('date')}</th>
+            <th class="sortable" data-sort="stock">Estoque atual${sortArrow('stock')}</th>
+            <th class="sortable" data-sort="ideal">Estoque ideal${sortArrow('ideal')}</th>
+            <th class="sortable" data-sort="status">Status${sortArrow('status')}</th>
+            <th class="sortable" data-sort="validade">Validade${sortArrow('validade')}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>${rows || `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px;">Nenhum material encontrado.</td></tr>`}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+/* -------- movimentações -------- */
+function renderMovimentacoes(){
+  if(!S.data.materials.length) return emptyState('Cadastre materiais primeiro', 'Você precisa ter ao menos um material cadastrado para registrar movimentações.', 'Cadastrar material', ()=>openModal('material'));
+  const movs = S.data.movements.filter(m=>inPeriod(m.date, S.ui.period)).slice(0,150);
+  const typeBadge = (t)=> t==='entrada'? `<span class="badge badge-ok">Entrada</span>` : t==='saida'? `<span class="badge badge-neutral">Saída</span>` : `<span class="badge badge-surgical">Ajuste</span>`;
+  const rows = movs.map(m=>{
+    const mat = findMaterial(m.materialId);
+    if(!mat) return '';
+    return `<tr>
+      <td>${fmtDate(m.date)}</td>
+      <td><span class="mat-code">${escapeHtml(mat.code||'—')}</span></td>
+      <td><span class="mat-name">${escapeHtml(mat.name)}</span></td>
+      <td>${typeBadge(m.type)}</td>
+      <td>${m.type==='saida'? escapeHtml(m.motivo||'—') : '—'}</td>
+      <td>${m.qty>0&&m.type==='ajuste'?'+':''}${m.qty} ${mat.unit}</td>
+      <td style="color:var(--text-muted);font-size:12px;">${escapeHtml(m.user)}</td>
+      <td style="color:var(--text-muted);font-size:12px;">${escapeHtml(m.note||'—')}</td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="card">
+    <div class="card-title">Histórico e auditoria — ${periodLabel(S.ui.period).toLowerCase()}</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Data</th><th>Código</th><th>Material</th><th>Tipo</th><th>Motivo</th><th>Qtd.</th><th>Usuário</th><th>Observação</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px;">Nenhuma movimentação neste período.</td></tr>`}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* -------- reposição -------- */
+function renderReposicao(){
+  if(!S.data.materials.length) return emptyState('Nada para repor ainda', 'Cadastre materiais e registre movimentações para gerar a lista de reposição.', 'Cadastrar material', ()=>openModal('material'));
+  const list = S.data.materials.map(m=>({m, s:matStats(m)})).filter(x=>x.s.eligible && x.s.suggested>0).sort((a,b)=>b.s.suggested-a.s.suggested);
+  const notEligible = S.data.materials.filter(m=>!matStats(m).eligible);
+  return `
+  <div class="card">
+    <div class="card-title">Lista de compras sugerida <span class="badge badge-neutral">estoque ideal = 1,25 × consumo médio mensal</span></div>
+    ${list.length? `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Código</th><th>Material</th><th>Estoque atual</th><th>Consumo médio/mês</th><th>Estoque ideal</th><th>Sugestão de compra</th></tr></thead>
+      <tbody>${list.map(({m,s})=>`<tr>
+        <td><span class="mat-code">${escapeHtml(m.code||'—')}</span></td>
+        <td><span class="mat-name">${escapeHtml(m.name)}</span>${isSurgical(m)?` <span class="badge badge-surgical">Cirúrgico</span>`:''}</td>
+        <td>${s.stock} ${m.unit}</td>
+        <td>${Math.round(s.avgMonthly*10)/10} ${m.unit}</td>
+        <td>${s.idealStock} ${m.unit}</td>
+        <td><strong style="color:var(--secondary);">${s.suggested} ${m.unit}</strong></td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : `<p style="color:var(--text-muted);font-size:13.5px;">Nenhuma reposição necessária no momento — estoque dentro do ideal.</p>`}
+  </div>
+  ${notEligible.length? `<div class="card"><div class="card-title">Ainda calculando</div>
+    <p style="color:var(--text-muted);font-size:13px;margin-top:-6px;">Estes materiais ainda não têm histórico suficiente (é preciso 21 dias de uso ou 3 movimentações) — o estoque ideal usa o mínimo cadastrado até lá.</p>
+    ${notEligible.map(m=>`<div class="list-item"><span>${escapeHtml(m.name)}</span><span class="badge badge-neutral">${matStats(m).daysActive}d / ${matStats(m).saidasCount} saídas</span></div>`).join('')}
+  </div>`:''}
+  `;
+}
+
+/* -------- relatórios -------- */
+function renderRelatorios(){
+  if(!S.data.materials.length) return emptyState('Sem dados para relatórios', 'Cadastre materiais e movimentações para ver insights de consumo.', 'Cadastrar material', ()=>openModal('material'));
+  const stats = S.data.materials.map(m=>({m,s:matStats(m)}));
+  const topConsumo = stats.filter(x=>x.s.avgMonthly>0).sort((a,b)=>b.s.avgMonthly-a.s.avgMonthly).slice(0,6);
+  const baixoMovimento = stats.filter(x=>{
+    const mov = S.data.movements.filter(mm=>mm.materialId===x.m.id);
+    if(!mov.length) return true;
+    const last = mov.reduce((d,mm)=> mm.date>d? mm.date:d, mov[0].date);
+    return daysBetween(last, todayISO())>45;
+  });
+  const cirurgicos = S.data.materials.filter(isSurgical).length;
+  const periodMovs = S.data.movements.filter(m=>inPeriod(m.date, S.ui.period));
+  const periodEntradas = periodMovs.filter(m=>m.type==='entrada').reduce((s,m)=>s+m.qty,0);
+  const periodSaidas = periodMovs.filter(m=>m.type==='saida').reduce((s,m)=>s+m.qty,0);
+  const periodValor = periodMovs.filter(m=>m.type==='saida').reduce((s,m)=>{ const mat=findMaterial(m.materialId); return s+(mat?(mat.cost||0)*m.qty:0); },0);
+  const periodPerdas = periodMovs.filter(m=>m.type==='saida' && (m.motivo==='Perda' || m.motivo==='Vencimento'));
+  const perdasQtd = periodPerdas.reduce((s,m)=>s+m.qty,0);
+  const perdasValor = periodPerdas.reduce((s,m)=>{ const mat=findMaterial(m.materialId); return s+(mat?(mat.cost||0)*m.qty:0); },0);
+  const perdasPct = periodSaidas>0? Math.round((perdasQtd/periodSaidas)*100) : 0;
+  const perdasPorMaterial = {};
+  periodPerdas.forEach(m=>{ perdasPorMaterial[m.materialId] = (perdasPorMaterial[m.materialId]||0)+m.qty; });
+  const perdasTop = Object.entries(perdasPorMaterial).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  return `
+  <div class="card">
+    <div class="card-title">Movimentação no período — ${periodLabel(S.ui.period).toLowerCase()}</div>
+    <div class="metric-grid" style="margin-bottom:0;">
+      <div class="metric-card"><div class="metric-label">Entradas</div><div class="metric-value ok">${periodEntradas}</div></div>
+      <div class="metric-card"><div class="metric-label">Saídas</div><div class="metric-value">${periodSaidas}</div></div>
+      <div class="metric-card"><div class="metric-label">Valor consumido</div><div class="metric-value ok">${fmtMoney(periodValor)}</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Perdas e desperdícios — ${periodLabel(S.ui.period).toLowerCase()}</div>
+    ${periodPerdas.length? `
+    <div class="metric-grid" style="margin-bottom:0;">
+      <div class="metric-card"><div class="metric-label">Unidades perdidas</div><div class="metric-value danger">${perdasQtd}</div></div>
+      <div class="metric-card"><div class="metric-label">Valor perdido</div><div class="metric-value danger">${fmtMoney(perdasValor)}</div></div>
+      <div class="metric-card"><div class="metric-label">% das saídas do período</div><div class="metric-value ${perdasPct>15?'danger':'warn'}">${perdasPct}%</div></div>
+    </div>
+    <div style="margin-top:14px;">
+      ${perdasTop.map(([mid,qty])=>{ const mat=findMaterial(mid); return mat? `<div class="list-item"><span class="mat-name">${escapeHtml(mat.name)}</span><span class="badge badge-danger">${qty} ${mat.unit}</span></div>` : ''; }).join('')}
+    </div>` : `<p style="color:var(--text-muted);font-size:13.5px;">Nenhuma perda ou vencimento registrado neste período.</p>`}
+  </div>
+  <div class="metric-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+    <div class="metric-card"><div class="metric-label">Materiais cirúrgicos</div><div class="metric-value">${cirurgicos}</div></div>
+    <div class="metric-card"><div class="metric-label">Materiais de consulta</div><div class="metric-value">${S.data.materials.filter(m=>!isSurgical(m)).length}</div></div>
+    <div class="metric-card"><div class="metric-label">Baixo movimento (45d+)</div><div class="metric-value warn">${baixoMovimento.length}</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Tendência de consumo — maior consumo médio mensal (histórico completo)</div>
+    ${topConsumo.length? topConsumo.map(({m,s})=>`
+      <div class="list-item">
+        <div><span class="mat-name">${escapeHtml(m.name)}</span>${isSurgical(m)?` <span class="badge badge-surgical">Cirúrgico</span>`:''}<div class="mat-meta">${escapeHtml(m.category)}</div></div>
+        <span class="badge badge-ok">${Math.round(s.avgMonthly*10)/10} ${m.unit}/mês</span>
+      </div>`).join('') : `<p style="color:var(--text-muted);font-size:13.5px;">Ainda sem dados suficientes de consumo.</p>`}
+  </div>
+  <div class="card">
+    <div class="card-title">Itens com baixo movimento</div>
+    ${baixoMovimento.length? baixoMovimento.map(({m})=>`
+      <div class="list-item"><span class="mat-name">${escapeHtml(m.name)}</span><span class="badge badge-neutral">Parado</span></div>`).join('') :
+      `<p style="color:var(--text-muted);font-size:13.5px;">Nenhum item parado — boa rotatividade de estoque.</p>`}
+  </div>
+  `;
+}
+
+/* -------- configurações -------- */
+function renderConfig(){
+  return `
+  <div class="card">
+    <div class="card-title">Conta</div>
+    <div class="settings-item"><div><div class="t">Seu nome</div><div class="d">${escapeHtml(S.session.displayName||'Não definido')}</div></div><button class="btn btn-outline btn-sm" id="cfg-edit-name">Editar</button></div>
+    <div class="settings-item"><div><div class="t">Logado como</div><div class="d">${escapeHtml(S.session.email)}</div></div><button class="btn btn-outline btn-sm" id="cfg-logout">Sair da conta</button></div>
+    <div class="settings-item"><div><div class="t">Sincronização em nuvem</div><div class="d">Seus dados ficam salvos no Firebase e sincronizam automaticamente em qualquer computador ou celular onde você fizer login com esta conta. O app também guarda uma cópia offline no aparelho, para reduzir o risco de perda de dados se a internet cair no meio de um lançamento.</div></div><span class="badge badge-ok">Ativa</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Aplicativo</div>
+    <div class="settings-item"><div><div class="t">Instalar app</div><div class="d">Adicione a Olhatta à tela inicial do celular ou ao desktop para acesso rápido, como um app nativo.</div></div><button class="btn btn-primary btn-sm" id="cfg-install">Instalar</button></div>
+    <div class="settings-item"><div><div class="t">Atualizar app</div><div class="d">Limpa o cache local e o service worker, garantindo que você está usando a versão mais recente.</div></div><button class="btn btn-outline btn-sm" id="cfg-update">Atualizar agora</button></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Categorias</div>
+    <p style="color:var(--text-muted);font-size:12.5px;margin-top:-8px;">"Consulta" e "Cirúrgico" são categorias do sistema e não podem ser removidas.</p>
+    ${S.data.categories.map(c=>`<div class="list-item"><span>${escapeHtml(c)}</span>${SYS_CATEGORIES.includes(c)? `<span class="badge badge-neutral">Sistema</span>` : `<button class="btn btn-ghost btn-sm" data-del-cat="${escapeHtml(c)}">Remover</button>`}</div>`).join('')}
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input class="search-input" id="new-cat-input" placeholder="Nova categoria…">
+      <button class="btn btn-secondary btn-sm" id="add-cat-btn">Adicionar</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:var(--danger);">Zona de risco</div>
+    <div class="settings-item"><div><div class="t">Zerar informações</div><div class="d">Remove todos os materiais, lotes e movimentações desta conta. As categorias do sistema são mantidas. Esta ação não pode ser desfeita.</div></div><button class="btn btn-danger btn-sm" id="cfg-reset">Zerar tudo</button></div>
+  </div>
+  `;
+}
+
+/* -------- shared: empty state -------- */
+function emptyState(title, desc, cta, onClick){
+  const id='es-cta-'+Math.random().toString(36).slice(2,7);
+  setTimeout(()=>{ const b=document.getElementById(id); if(b) b.onclick=onClick; },0);
+  return `<div class="card empty-state">${ICONS.eye}<h3 style="margin:6px 0 2px;font-size:16px;">${title}</h3><p>${desc}</p><button class="btn btn-primary btn-sm" id="${id}" style="margin-top:12px;">${cta}</button></div>`;
+}
+
+/* ---------------- modals ---------------- */
+function renderModal(){
+  const {name, payload} = S.ui.modal;
+  if(name==='material') return materialModal(payload);
+  if(name==='mov') return movModal();
+  if(name==='adjust') return adjustModal(payload);
+  if(name==='global-search') return globalSearchModal();
+  if(name==='edit-name') return editNameModal();
+  if(name==='confirm-reset') return confirmModal('Zerar todas as informações?','Isso removerá permanentemente todos os materiais, lotes e movimentações desta conta.','Zerar dados', resetAllData);
+  if(name==='confirm-delete-mat') return confirmModal('Remover material?','Isso também apagará o histórico de movimentações deste item.','Remover', ()=>deleteMaterial(payload.id));
+  if(name==='install-help') return installHelpModal();
+  return '';
+}
+
+function materialModal(payload){
+  const editId = payload && payload.id;
+  const m = editId? findMaterial(editId): null;
+  const tracksExpiry = m? m.tracksExpiry!==false : true;
+  return `
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <h3>${m? 'Editar material':'Novo material'}</h3>
+      <p class="modal-sub">${m? 'Atualize as informações do material.':'Cadastre um material de consulta ou cirúrgico.'}</p>
+      <form id="material-form">
+        <div class="form-row">
+          <div class="field"><label>Código do produto</label><input name="code" value="${m? escapeHtml(m.code||''):''}" placeholder="Ex.: COL-001"></div>
+          <div class="field"><label>Unidade</label><input name="unit" value="${m? escapeHtml(m.unit):'un'}" placeholder="un, ml, cx…"></div>
+        </div>
+        <div class="field"><label>Nome</label><input name="name" value="${m? escapeHtml(m.name):''}" placeholder="Ex.: Colírio anestésico" required></div>
+        <div class="form-row">
+          <div class="field"><label>Categoria</label>
+            <select name="category">${S.data.categories.map(c=>`<option value="${escapeHtml(c)}" ${m&&m.category===c?'selected':''}>${escapeHtml(c)}</option>`).join('')}</select>
+          </div>
+          <div class="field"><label>Estoque mínimo</label><input name="minStock" type="number" min="0" step="0.1" value="${m? m.minStock:0}"></div>
+        </div>
+        <div class="field"><label>Custo unitário (R$) <span style="font-weight:400;color:var(--text-muted);">— opcional</span></label><input name="cost" type="number" min="0" step="0.01" placeholder="0,00" value="${m && m.cost? m.cost : ''}"></div>
+        <div class="toggle-row">
+          <div><div class="lbl">Controla validade</div><div class="desc">Desligue para materiais sem data de vencimento</div></div>
+          <label class="switch"><input type="checkbox" name="tracksExpiry" id="tracks-expiry-toggle" ${tracksExpiry?'checked':''}><span class="slider"></span></label>
+        </div>
+        ${!m? `
+        <div class="form-row">
+          <div class="field"><label>Estoque inicial (opcional)</label><input name="initialQty" type="number" min="0" step="0.01" placeholder="0"></div>
+          <div class="field" id="initial-expiry-wrap" style="${tracksExpiry?'':'display:none;'}"><label>Validade deste estoque (opcional)</label><input name="initialExpiry" type="date"></div>
+        </div>
+        <p style="font-size:11.5px;color:var(--text-muted);margin:-8px 0 14px;">Se você já tem esse material em mãos, informe a quantidade e a validade aqui. Depois, use "Entrada" para novos lotes.</p>
+        `:''}
+        <div class="modal-actions">
+          ${m? `<button type="button" class="btn btn-danger" id="del-mat-btn">Remover</button>`:''}
+          <button type="button" class="btn btn-outline" id="modal-cancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>`;
+}
+
+function movModal(presetType, presetMaterialId){
+  const type = presetType || S.ui.movType;
+  const selMat = presetMaterialId? findMaterial(presetMaterialId) : null;
+  const showExpiry = type==='entrada' && (!selMat || selMat.tracksExpiry!==false);
+  return `
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <h3>Nova movimentação</h3>
+      <p class="modal-sub">Registre entrada ou saída de material do estoque.</p>
+      <div class="tabs">
+        <button type="button" class="tab ${type==='entrada'?'active':''}" data-movtype="entrada">Entrada</button>
+        <button type="button" class="tab ${type==='saida'?'active':''}" data-movtype="saida">Saída</button>
+      </div>
+      <form id="mov-form">
+        <div class="field"><label>Material</label>
+          <select name="materialId" id="mov-material-select" required>
+            <option value="">Selecione…</option>
+            ${S.data.materials.map(m=>`<option value="${m.id}" data-tracks="${m.tracksExpiry!==false}" ${selMat&&selMat.id===m.id?'selected':''}>${escapeHtml(m.name)} (${matStock(m)} ${m.unit} em estoque)</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Quantidade</label><input name="qty" type="number" min="0.01" step="0.01" required></div>
+          ${type==='entrada'? `
+          <div class="field" id="expiry-field-wrap" style="${showExpiry?'':'display:none;'}"><label>Validade (opcional)</label><input name="expiry" type="date"></div>
+          ` : `
+          <div class="field"><label>Motivo da saída</label><select name="motivo">${MOTIVOS_SAIDA.map(mo=>`<option value="${mo}">${mo}</option>`).join('')}</select></div>
+          `}
+        </div>
+        ${type==='saida'? `<div class="note-box" style="margin-bottom:14px;">Saída segue FEFO: consome primeiro os lotes que vencem antes.</div>`:''}
+        <div class="field"><label>Observação (opcional)</label><input name="note" placeholder="Ex.: cirurgia de catarata — paciente Rex"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="modal-cancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Registrar ${type==='entrada'?'entrada':'saída'}</button>
+        </div>
+      </form>
+    </div>
+  </div>`;
+}
+
+function adjustModal(payload){
+  const mat = findMaterial(payload.id);
+  const current = matStock(mat);
+  return `
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" style="max-width:420px;">
+      <h3>Ajustar estoque</h3>
+      <p class="modal-sub">Corrija manualmente o estoque de <strong>${escapeHtml(mat.name)}</strong> — use apenas se esqueceu de registrar uma entrada ou saída.</p>
+      <form id="adjust-form">
+        <div class="field"><label>Estoque atual do sistema</label><input value="${current} ${mat.unit}" disabled></div>
+        <div class="field"><label>Novo estoque total</label><input name="newQty" type="number" min="0" step="0.01" value="${current}" required></div>
+        <div class="field"><label>Motivo do ajuste</label><input name="note" placeholder="Ex.: contagem física, esqueci de lançar saída"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="modal-cancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar ajuste</button>
+        </div>
+      </form>
+    </div>
+  </div>`;
+}
+
+function editNameModal(){
+  return `
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" style="max-width:380px;">
+      <h3>Alterar seu nome</h3>
+      <p class="modal-sub">Esse é o nome usado no cumprimento da Visão Geral.</p>
+      <form id="edit-name-form">
+        <div class="field"><label>Seu nome</label><input name="displayName" value="${escapeHtml(S.session.displayName||'')}" placeholder="Ex.: Camila"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="modal-cancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>`;
+}
+
+function globalSearchModal(){
+  const q = S.ui.globalSearchQuery.toLowerCase();
+  const results = q? S.data.materials.filter(m=> m.name.toLowerCase().includes(q) || (m.code||'').toLowerCase().includes(q)).slice(0,8) : [];
+  return `
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" style="max-width:460px;">
+      <h3>Pesquisar</h3>
+      <p class="modal-sub">Busque um material pelo código ou pelo nome.</p>
+      <input class="search-input" id="global-search-input" placeholder="Digite código ou nome…" value="${escapeHtml(S.ui.globalSearchQuery)}" style="margin-bottom:10px;">
+      <div>
+        ${!q? `<div class="gsr-empty">Comece a digitar para pesquisar.</div>` :
+          results.length? results.map(m=>`<div class="gsr-item" data-goto="${m.id}"><div><span class="mat-name">${escapeHtml(m.name)}</span><div class="mat-meta">${escapeHtml(m.category)}</div></div><span class="mat-code">${escapeHtml(m.code||'—')}</span></div>`).join('') :
+          `<div class="gsr-empty">Nenhum material encontrado.</div>`}
+      </div>
+      <div class="modal-actions"><button type="button" class="btn btn-outline" id="modal-cancel">Fechar</button></div>
+    </div>
+  </div>`;
+}
+
+function confirmModal(title, desc, cta, onConfirm){
+  window._confirmAction = onConfirm;
+  return `
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" style="max-width:400px;">
+      <h3>${title}</h3>
+      <p class="modal-sub">${desc}</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" id="modal-cancel">Cancelar</button>
+        <button type="button" class="btn btn-danger-solid" id="modal-confirm">${cta}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function installHelpModal(){
+  return `
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" style="max-width:420px;">
+      <h3>Instalar a Olhatta</h3>
+      <p class="modal-sub">Seu navegador não ofereceu a instalação automática agora. Você ainda pode instalar manualmente:</p>
+      <p style="font-size:13.5px;line-height:1.7;">
+        <strong>No celular (Android/Chrome):</strong> toque no menu ⋮ e escolha "Instalar app" ou "Adicionar à tela inicial".<br>
+        <strong>No iPhone (Safari):</strong> toque em Compartilhar → "Adicionar à Tela de Início".<br>
+        <strong>No computador (Chrome/Edge):</strong> clique no ícone de instalação na barra de endereço, ou no menu ⋮ → "Instalar Olhatta".
+      </p>
+      <div class="note-box">Este app já inclui manifest e service worker prontos. Assim que estiver publicado no GitHub Pages (endereço https), a maioria dos navegadores oferece a instalação automática — em alguns (como Safari/iPhone) o caminho continua sendo manual, como acima.</div>
+      <div class="modal-actions"><button type="button" class="btn btn-primary" id="modal-cancel">Entendi</button></div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- events ---------------- */
+function attachShellEvents(){
+  document.querySelectorAll('[data-route]').forEach(el=>{
+    el.onclick = ()=>{ S.route = el.dataset.route; S.ui.expandedMat=null; S.ui.modal=null; render(); };
+  });
+  const lo = document.getElementById('logout-btn'); if(lo) lo.onclick = doLogout;
+
+  const gsBtn = document.getElementById('global-search-btn');
+  if(gsBtn) gsBtn.onclick = ()=>{ S.ui.globalSearchQuery=''; openModal('global-search'); };
+
+  setSyncStatus(S.ui.syncStatus);
+
+  if(PERIOD_ROUTES.includes(S.route)){
+    document.querySelectorAll('[data-pgran]').forEach(b=> b.onclick=()=>{ S.ui.period.gran=b.dataset.pgran; render(); });
+    document.querySelectorAll('[data-pnav]').forEach(b=> b.onclick=()=>{ shiftPeriod(b.dataset.pnav); render(); });
+    const lbl = document.getElementById('period-label-btn');
+    const dateInput = document.getElementById('period-date-input');
+    if(lbl && dateInput){
+      lbl.onclick = ()=>{ if(dateInput.showPicker){ dateInput.style.pointerEvents='auto'; dateInput.showPicker(); } else { dateInput.click(); } };
+      dateInput.onchange = ()=>{ if(dateInput.value){ S.ui.period.refDate = dateInput.value; render(); } };
+    }
+  }
+
+  if(S.route==='dashboard'){
+    const qaE=document.getElementById('qa-entrada'), qaN=document.getElementById('qa-novo'), qaS=document.getElementById('qa-saida');
+    if(qaE) qaE.onclick = ()=>{ S.ui.movType='entrada'; openModal('mov'); };
+    if(qaN) qaN.onclick = ()=>openModal('material');
+    if(qaS) qaS.onclick = ()=>{ S.ui.movType='saida'; openModal('mov'); };
+  }
+
+  if(S.route==='estoque'){
+    document.getElementById('btn-new-material').onclick = ()=>openModal('material');
+    const searchEl = document.getElementById('estoque-search');
+    searchEl.oninput = (e)=>{ S.ui.estoqueSearch=e.target.value; render(); document.getElementById('estoque-search').focus(); const el=document.getElementById('estoque-search'); el.selectionStart=el.selectionEnd=e.target.value.length; };
+    document.getElementById('estoque-cat').onchange = (e)=>{ S.ui.estoqueCat=e.target.value; render(); };
+    document.querySelectorAll('[data-toggle]').forEach(el=>{
+      el.onclick = ()=>{ const id=el.dataset.toggle; S.ui.expandedMat = S.ui.expandedMat===id? null: id; render(); };
+    });
+    document.querySelectorAll('[data-sort]').forEach(el=>{
+      el.onclick = ()=>{
+        const f = el.dataset.sort;
+        if(S.ui.estoqueSort.field===f) S.ui.estoqueSort.dir = S.ui.estoqueSort.dir==='asc'?'desc':'asc';
+        else S.ui.estoqueSort = {field:f, dir:'asc'};
+        render();
+      };
+    });
+    document.querySelectorAll('[data-edit]').forEach(el=>{
+      el.onclick = (e)=>{ e.stopPropagation(); openModal('material',{id:el.dataset.edit}); };
+    });
+    document.querySelectorAll('[data-adjust]').forEach(el=>{
+      el.onclick = (e)=>{ e.stopPropagation(); openModal('adjust',{id:el.dataset.adjust}); };
+    });
+  }
+  if(S.route==='movimentacoes'){
+    document.getElementById('btn-new-mov').onclick = ()=>openModal('mov');
+  }
+  if(S.route==='config'){
+    document.getElementById('cfg-logout').onclick = doLogout;
+    document.getElementById('cfg-edit-name').onclick = ()=>openModal('edit-name');
+    document.getElementById('cfg-install').onclick = handleInstallClick;
+    document.getElementById('cfg-update').onclick = handleUpdateClick;
+    document.getElementById('cfg-reset').onclick = ()=>openModal('confirm-reset');
+    document.getElementById('add-cat-btn').onclick = async ()=>{
+      const inp = document.getElementById('new-cat-input');
+      await addCategory(inp.value); render();
+    };
+    document.querySelectorAll('[data-del-cat]').forEach(el=>{
+      el.onclick = async ()=>{
+        const c = el.dataset.delCat;
+        S.data.categories = S.data.categories.filter(x=>x!==c);
+        await saveUserData(); render();
+      };
+    });
+  }
+
+  attachModalEvents();
+}
+
+function attachModalEvents(){
+  const overlay = document.getElementById('modal-overlay');
+  if(!overlay) return;
+  overlay.onclick = (e)=>{ if(e.target===overlay) closeModal(); };
+  const cancel = document.getElementById('modal-cancel'); if(cancel) cancel.onclick = closeModal;
+  const confirmBtn = document.getElementById('modal-confirm');
+  if(confirmBtn) confirmBtn.onclick = ()=>{ if(window._confirmAction) window._confirmAction(); };
+
+  const matForm = document.getElementById('material-form');
+  if(matForm){
+    matForm.onsubmit = (e)=>{ e.preventDefault(); saveMaterial(matForm, S.ui.modal.payload && S.ui.modal.payload.id); };
+    const delBtn = document.getElementById('del-mat-btn');
+    if(delBtn) delBtn.onclick = ()=> openModal('confirm-delete-mat', S.ui.modal.payload);
+    const tracksToggle = document.getElementById('tracks-expiry-toggle');
+    const initExpWrap = document.getElementById('initial-expiry-wrap');
+    if(tracksToggle && initExpWrap){
+      tracksToggle.onchange = ()=>{ initExpWrap.style.display = tracksToggle.checked? '' : 'none'; };
+    }
+  }
+
+  const movForm = document.getElementById('mov-form');
+  if(movForm){
+    document.querySelectorAll('[data-movtype]').forEach(el=>{
+      el.onclick = ()=>{ S.ui.movType = el.dataset.movtype; openModal('mov'); };
+    });
+    const matSelect = document.getElementById('mov-material-select');
+    if(matSelect){
+      matSelect.onchange = ()=>{
+        const opt = matSelect.options[matSelect.selectedIndex];
+        const tracks = opt && opt.dataset.tracks==='true';
+        const wrap = document.getElementById('expiry-field-wrap');
+        if(wrap) wrap.style.display = (S.ui.movType==='entrada' && tracks)? '' : 'none';
+      };
+    }
+    movForm.onsubmit = async (e)=>{
+      e.preventDefault();
+      const materialId = movForm.materialId.value;
+      const qty = movForm.qty.value;
+      const note = movForm.note.value;
+      let ok = true;
+      if(S.ui.movType==='entrada') ok = await registerEntrada(materialId, qty, movForm.expiry ? movForm.expiry.value : null, note);
+      else ok = await registerSaida(materialId, qty, note, movForm.motivo ? movForm.motivo.value : 'Outro');
+      if(ok!==false) closeModal();
+    };
+  }
+
+  const adjustForm = document.getElementById('adjust-form');
+  if(adjustForm){
+    adjustForm.onsubmit = async (e)=>{
+      e.preventDefault();
+      await registerAjuste(S.ui.modal.payload.id, adjustForm.newQty.value, adjustForm.note.value);
+      closeModal();
+    };
+  }
+
+  const editNameForm = document.getElementById('edit-name-form');
+  if(editNameForm){
+    editNameForm.onsubmit = async (e)=>{ e.preventDefault(); await saveDisplayName(editNameForm.displayName.value); closeModal(); };
+  }
+
+  const gsInput = document.getElementById('global-search-input');
+  if(gsInput){
+    gsInput.focus();
+    gsInput.selectionStart = gsInput.selectionEnd = gsInput.value.length;
+    gsInput.oninput = (e)=>{ S.ui.globalSearchQuery = e.target.value; render(); };
+    document.querySelectorAll('[data-goto]').forEach(el=>{
+      el.onclick = ()=>{
+        const mat = findMaterial(el.dataset.goto);
+        S.route='estoque'; S.ui.estoqueSearch = mat? (mat.code||mat.name) : ''; S.ui.modal=null;
+        render();
+      };
+    });
+  }
+}
+
+document.addEventListener('keydown', (e)=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){
+    if(S.session && S.dataLoaded){ e.preventDefault(); S.ui.globalSearchQuery=''; openModal('global-search'); }
+  }
+});
+
+/* ---------------- service worker (instalação como app) ---------------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+
+/* ---------------- boot ---------------- */
+S.authResolved = false;
+S.dataLoaded = false;
+
+function boot(){
+  if(!FIREBASE_READY){ render(); return; }
+  auth.onAuthStateChanged((user)=>{
+    S.authResolved = true;
+    if(user){
+      S.session = {uid:user.uid, email:user.email, displayName:user.displayName||''};
+      S.needsName = !user.displayName;
+      S.dataLoaded = false;
+      subscribeUserData(user.uid);
+    } else {
+      if(unsubscribeDoc){ unsubscribeDoc(); unsubscribeDoc=null; }
+      S.session = null; S.data = null; S.dataLoaded=false; S.needsName=false;
+    }
+    render();
+  });
+  render();
+}
+boot();
+</script>
+</body>
+</html>
